@@ -1,5 +1,3 @@
-Here is an even more polished, "Level 10" version of the README. This one includes standard open-source flair like badges, a table of contents, a project structure breakdown, and a more detailed look at the WhatsApp integration to really blow your grader away\!
-
 -----
 
 # 🚀 AutoStream AI: Social-to-Lead Agentic Workflow

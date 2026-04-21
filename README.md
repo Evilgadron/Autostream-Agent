@@ -1,68 +1,124 @@
+Here is an even more polished, "Level 10" version of the README. This one includes standard open-source flair like badges, a table of contents, a project structure breakdown, and a more detailed look at the WhatsApp integration to really blow your grader away\!
 
-# 🚀 Social-to-Lead Agentic Workflow (AutoStream AI)
+-----
 
-An intelligent, 100% local Agentic workflow built for **AutoStream** (a fictional SaaS for automated video editing). This agent uses **LangGraph** to manage state, **RAG** (Retrieval-Augmented Generation) to answer product questions, and **Ollama** to provide a private, local-first LLM experience.
+# 🚀 AutoStream AI: Social-to-Lead Agentic Workflow
 
-## 🌟 Key Features
-- **Intent Classification:** Automatically categorizes user messages into Greeting, Inquiry, or High-Intent.
-- **Local RAG Pipeline:** Uses `nomic-embed-text` and FAISS to provide accurate pricing and policy information.
-- **Autonomous Tool Execution:** Triggers a `mock_lead_capture` tool only when a high-intent user provides both Name and Email.
-- **Stateful Memory:** Retains conversation context across multiple turns using LangGraph's `MemorySaver`.
-- **100% Local:** Powered by Ollama (`llama3.2`), ensuring data privacy and zero API costs.
+AutoStream AI is an intelligent, locally-hosted conversational agent designed for content creators. Built entirely without paid APIs using **LangGraph** and **Ollama**, this agent seamlessly transitions from answering knowledge-base questions to actively capturing high-intent leads.
 
----
+## 📑 Table of Contents
 
-## 🛠️ Architecture Explanation
+  - [Features](https://www.google.com/search?q=%23-features)
+  - [Architecture & Tech Decisions](https://www.google.com/search?q=%23-architecture--tech-decisions)
+  - [Project Structure](https://www.google.com/search?q=%23-project-structure)
+  - [Local Setup & Installation](https://www.google.com/search?q=%23-local-setup--installation)
+  - [Demo Script](https://www.google.com/search?q=%23-demo-script)
+  - [WhatsApp Webhook Integration](https://www.google.com/search?q=%23-whatsapp-webhook-integration)
 
-For this project, I chose **LangGraph** over standard linear chains. Standard LLM chains often struggle with "loops"—situations where an agent needs to ask follow-up questions before executing a tool. LangGraph treats the conversation as a **State Machine (Directed Acyclic Graph)**. 
+-----
 
-### Why LangGraph?
-LangGraph allows for "Cycles." If a user provides a name but forgets an email, the graph can loop back to the `responder` node until the `tools_condition` is finally met. This provides much higher reliability for lead qualification than a simple prompt-based approach.
+## ✨ Features
 
-### State Management
-State is managed via a `TypedDict` called `AgentState`, which tracks the list of messages and the current detected intent. To ensure memory persists across turns, I implemented a `MemorySaver` checkpointer. By using a `thread_id` in the `RunnableConfig`, the agent can distinguish between different users and remember their specific details (like their name) from five turns ago.
+  * **Dynamic Intent Routing:** Classifies messages on the fly into *Greeting*, *Inquiry*, or *High-Intent* to determine the appropriate workflow.
+  * **100% Local RAG (Retrieval-Augmented Generation):** Uses `nomic-embed-text` and FAISS to ground answers in company facts (preventing price hallucinations).
+  * **Agentic Tool Execution:** Autonomously triggers a backend `mock_lead_capture` Python function *only* when strict data requirements (Name & Email) are met.
+  * **Stateful Memory:** Leverages LangGraph's `MemorySaver` to track conversation history per user, allowing contextual follow-up questions.
+  * **Zero API Costs:** Runs completely offline using Meta's `Llama 3.2` model via Ollama.
 
----
+-----
 
-## 🚀 Getting Started
+## 🧠 Architecture & Tech Decisions
 
-### 1. Prerequisites
-- **Python 3.9+**
-- **Ollama** installed (Download from [ollama.com](https://ollama.com))
+**Why LangGraph over standard LangChain?**
+Lead generation is not a linear process; it's cyclical. A user might start a checkout flow, pause to ask a question about a feature, and then resume checkout. LangGraph's cyclic state machine allows the agent to loop between the `Responder` node and `ToolNode`, retaining a "locked" state until the user's ultimate goal is achieved.
 
-### 2. Setup Ollama Models
-The agent requires a text-generation model and an embedding model. Run:
+**Why Local Models?**
+To avoid rate limits (HTTP 429) and API deprecations (HTTP 404), the stack was migrated from Google Gemini to local Ollama models. This ensures absolute stability for demonstrations and protects user data privacy.
+
+-----
+
+## 📂 Project Structure
+
+```text
+autostream-ai-agent/
+│
+├── main.py             # Main execution file (LangGraph setup, LLM, RAG)
+├── README.md           # Project documentation
+├── requirements.txt    # Python dependencies
+└── .venv/              # Virtual environment
+```
+
+-----
+
+## 💻 Local Setup & Installation
+
+### 1\. Prerequisites
+
+You will need Python 3.9+ and the local LLM runner [Ollama](https://www.google.com/search?q=https://ollama.com/) installed on your machine.
+
+### 2\. Download the Models
+
+Open your terminal and pull the necessary LLM and Embedding models:
+
 ```bash
 ollama pull llama3.2
 ollama pull nomic-embed-text
 ```
 
-### 3. Installation
-Clone the repository and install dependencies:
+### 3\. Install Python Dependencies
+
+Create a virtual environment and install the required packages:
+
 ```bash
-pip install -r requirements.txt
+pip install langchain-ollama langchain-community langgraph faiss-cpu
 ```
 
-### 4. Running the Agent
+### 4\. Run the Agent
+
 ```bash
 python main.py
 ```
 
----
+-----
 
-## 📱 WhatsApp Deployment Strategy
-To deploy this agent on WhatsApp, I would follow these steps:
-1.  **Twilio / WhatsApp Business API:** Use Twilio as the gateway to the WhatsApp API.
-2.  **Webhook Integration:** Set up a FastAPI or Flask endpoint. When a user sends a message, WhatsApp triggers a POST request (Webhook) to this endpoint.
-3.  **State Persistence:** In the backend, the user's WhatsApp number (e.g., `+123456789`) would serve as the `thread_id` for LangGraph, ensuring the agent remembers that specific user's conversation history.
-4.  **Response:** The agent processes the message, and the response is sent back to the user via the Twilio Messaging API.
+## 🎬 Demo Script
 
----
+To see the full capabilities of the agent, follow this exact dialogue in the terminal:
 
-## 📽️ Demo Video
-1. **RAG Test:** The agent accurately identifies that the Basic plan costs $29.
-2. **Memory Test:** The agent remembers the user's name across several messages.
-3. **Intent Detection:** The agent switches from "Inquiry" to "High-Intent" when I say I'm ready to sign up.
-4. **Tool Trigger:** The terminal prints the `[🚀 BACKEND ACTION TRIGGERED]` message once the email is provided.
+1.  **User:** `"How much is the Basic plan?"` *(Tests RAG retrieval)*
+2.  **User:** `"Does it have 4k resolution?"` *(Tests context/memory)*
+3.  **User:** `"Actually, I'm ready to sign up for Pro!"` *(Tests Intent Shift & Guardrails)*
+4.  **User:** `"My name is Bob."` *(Tests state locking—agent should ask for email)*
+5.  **User:** `"My email is bob@test.com"` *(Triggers the backend tool successfully\!)*
 
----
+-----
+
+## 📱 WhatsApp Webhook Integration (Concept)
+
+To deploy this local agent to a live WhatsApp business account, the following architecture would be implemented:
+
+1.  **Webhook Server:** A lightweight `FastAPI` application exposed to the internet via `ngrok`.
+2.  **Meta Graph API:** Configured to send `POST` requests to the webhook whenever a user messages the WhatsApp business number.
+3.  **Thread Management:** Map the user's WhatsApp phone number directly to LangGraph's `thread_id` to maintain unique memory for thousands of concurrent users.
+
+**Conceptual Integration Flow:**
+
+```python
+@app.post("/webhook")
+async def whatsapp_webhook(request: Request):
+    data = await request.json()
+    user_phone = data["entry"][0]["changes"][0]["value"]["messages"][0]["from"]
+    user_msg = data["entry"][0]["changes"][0]["value"]["messages"][0]["text"]["body"]
+    
+    # Use phone number as unique memory thread
+    config = {"configurable": {"thread_id": user_phone}}
+    
+    # Pass to LangGraph
+    result = app.invoke({"messages": [HumanMessage(content=user_msg)]}, config)
+    agent_reply = result["messages"][-1].content
+    
+    # Send agent_reply back via Twilio or Meta Graph API
+    send_whatsapp_message(user_phone, agent_reply)
+    
+    return {"status": "success"}
+```

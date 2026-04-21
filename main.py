@@ -91,9 +91,10 @@ def respond(state: AgentState):
     {context_str}
     
     CRITICAL RULES:
-    1. If intent is 'Inquiry', answer strictly using the KNOWLEDGE BASE FACTS.
+    1. If intent is 'Inquiry', answer strictly using the KNOWLEDGE BASE FACTS. 
     2. If intent is 'High-Intent', you must ask for the user's Name AND Email to sign them up.
     3. Do NOT use the tool if you don't have their real name and email yet. Ask them for it!
+    4. OUT OF DOMAIN RULE: If the user asks about topics completely unrelated to AutoStream, video streaming, pricing, or customer service (e.g., coding, recipes, history, general chit-chat), politely state: "I apologize, but I am a customer service assistant for AutoStream. I can only answer questions related to our products and services." Do not attempt to answer the off-topic question.
     """
 
     # GUARDRAIL 2: Dynamic Tool Binding. Only give tools if High-Intent!
@@ -125,32 +126,37 @@ memory = MemorySaver()
 app = workflow.compile(checkpointer=memory)
 
 # ==========================================
-# 5. FULL WORKFLOW TEST 
+# 5. LIVE INTERACTIVE TERMINAL
 # ==========================================
 if __name__ == "__main__":
-    print("\nStarting Phase 4 Test: The Full Local Agent...\n")
+    print("\n" + "="*50)
+    print("🤖 AutoStream AI Agent is LIVE!")
+    print("Type 'quit', 'exit', or 'q' to end the conversation.")
+    print("="*50 + "\n")
     
-    # Changed Thread ID so we don't accidentally load the bad memory from the last run!
-    config: RunnableConfig = {"configurable": {"thread_id": "demo_user_final"}}
+    # Thread ID for memory tracking
+    config: RunnableConfig = {"configurable": {"thread_id": "live_demo_session"}}
 
-    test_inputs = [
-        "Hey there!", 
-        "How much is the Basic plan?",                  
-        "Does it have 4k resolution?",                  
-        "Actually, I'm ready to sign up for Pro!",      
-        "My name is Bob.",                              
-        "My email is bob@test.com"                      
-    ]
+    while True:
+        # 1. Get input from the user directly in the terminal
+        user_input = input("You: ")
+        
+        # 2. Check if the user wants to exit
+        if user_input.lower() in ['quit', 'exit', 'q']:
+            print("\nAgent: Goodbye! Have a great day.\n")
+            break
+            
+        # 3. Skip empty messages
+        if not user_input.strip():
+            continue
 
-    for user_input in test_inputs:
-        print(f"\nUser: {user_input}")
-
+        # 4. Send the message to the LangGraph agent
         result = app.invoke({"messages": [HumanMessage(content=user_input)]}, config)
         
+        # 5. Extract and print the results
         current_intent = result.get("intent", "Unknown")
         agent_response = result.get("messages", [])[-1].content 
         
-        print(f"[Detected Intent]: {current_intent}")
+        print(f"\n[Detected Intent]: {current_intent}")
         print(f"Agent: {agent_response}")
-        print("-" * 50)
-        time.sleep(1)
+        print("-" * 50 + "\n")

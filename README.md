@@ -85,6 +85,4 @@ Type `quit`, `exit`, or `q` at any time to gracefully end the terminal session.
 
 -----
 
-### 📝 License
 
-MIT License - Created for demonstration and educational purposes.

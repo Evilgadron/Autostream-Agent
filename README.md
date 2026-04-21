@@ -1,50 +1,28 @@
------
+# 🚀 AutoStream AI: Interactive Local Lead-Gen Agent
 
-# 🚀 AutoStream AI: Social-to-Lead Agentic Workflow
+AutoStream AI is a stateful, interactive, and **100% locally hosted** AI agent designed for SaaS customer service and lead generation. Built using **LangGraph** and **Ollama**, this agent seamlessly answers product questions using a local Knowledge Base (RAG), rejects off-topic queries, and transitions users into a lead-capture workflow when high purchase intent is detected.
 
-AutoStream AI is an intelligent, locally-hosted conversational agent designed for content creators. Built entirely without paid APIs using **LangGraph** and **Ollama**, this agent seamlessly transitions from answering knowledge-base questions to actively capturing high-intent leads.
+## ✨ Key Features
 
-## 📑 Table of Contents
-
-  - [Features](https://www.google.com/search?q=%23-features)
-  - [Architecture & Tech Decisions](https://www.google.com/search?q=%23-architecture--tech-decisions)
-  - [Project Structure](https://www.google.com/search?q=%23-project-structure)
-  - [Local Setup & Installation](https://www.google.com/search?q=%23-local-setup--installation)
-  - [Demo Script](https://www.google.com/search?q=%23-demo-script)
-  - [WhatsApp Webhook Integration](https://www.google.com/search?q=%23-whatsapp-webhook-integration)
-
------
-
-## ✨ Features
-
-  * **Dynamic Intent Routing:** Classifies messages on the fly into *Greeting*, *Inquiry*, or *High-Intent* to determine the appropriate workflow.
-  * **100% Local RAG (Retrieval-Augmented Generation):** Uses `nomic-embed-text` and FAISS to ground answers in company facts (preventing price hallucinations).
-  * **Agentic Tool Execution:** Autonomously triggers a backend `mock_lead_capture` Python function *only* when strict data requirements (Name & Email) are met.
-  * **Stateful Memory:** Leverages LangGraph's `MemorySaver` to track conversation history per user, allowing contextual follow-up questions.
-  * **Zero API Costs:** Runs completely offline using Meta's `Llama 3.2` model via Ollama.
+  * **Interactive CLI Interface:** Chat directly with the agent in a live terminal session loop.
+  * **100% Local execution:** Powered by Meta's `Llama 3.2` and Nomic's `nomic-embed-text`. Zero API costs, zero rate limits, and complete data privacy.
+  * **Dynamic Intent Routing:** Automatically classifies user input into *Greeting*, *Inquiry*, or *High-Intent* workflows.
+  * **Local RAG (Retrieval-Augmented Generation):** Uses FAISS to ground answers strictly in company facts, preventing pricing or policy hallucinations.
+  * **Agentic Tool Execution:** Autonomously triggers a backend Python function (`mock_lead_capture`) only when specific conditions (valid Name & Email) are met.
+  * **Robust Guardrails:** \* **Out-of-Domain (OOD) Protection:** Politely declines to answer off-topic questions (e.g., coding, recipes) to stay in character.
+      * **Tool Validation:** Prevents the LLM from hallucinating fake emails or triggering the tool prematurely.
+      * **State Locking:** Uses LangGraph's `MemorySaver` to lock the user in a signup state until their details are captured.
 
 -----
 
-## 🧠 Architecture & Tech Decisions
+## 🧠 System Architecture
 
-**Why LangGraph over standard LangChain?**
-Lead generation is not a linear process; it's cyclical. A user might start a checkout flow, pause to ask a question about a feature, and then resume checkout. LangGraph's cyclic state machine allows the agent to loop between the `Responder` node and `ToolNode`, retaining a "locked" state until the user's ultimate goal is achieved.
+The agent operates on a **cyclical graph** architecture using LangGraph:
 
-**Why Local Models?**
-To avoid rate limits (HTTP 429) and API deprecations (HTTP 404), the stack was migrated from Google Gemini to local Ollama models. This ensures absolute stability for demonstrations and protects user data privacy.
-
------
-
-## 📂 Project Structure
-
-```text
-autostream-ai-agent/
-│
-├── main.py             # Main execution file (LangGraph setup, LLM, RAG)
-├── README.md           # Project documentation
-├── requirements.txt    # Python dependencies
-└── .venv/              # Virtual environment
-```
+1.  **Classifier Node:** Analyzes the user's message and updates the state's `intent` flag.
+2.  **Responder Node:** \* If `Inquiry`: Queries the FAISS vector database and answers using strictly retrieved facts.
+      * If `High-Intent`: Binds the `mock_lead_capture` tool to the LLM and aggressively prompts for user details.
+3.  **Tool Node:** Executes backend Python logic once valid arguments are provided by the LLM, then routes back to the Responder to thank the user.
 
 -----
 
@@ -52,11 +30,11 @@ autostream-ai-agent/
 
 ### 1\. Prerequisites
 
-You will need Python 3.9+ and the local LLM runner [Ollama](https://www.google.com/search?q=https://ollama.com/) installed on your machine.
+You will need Python 3.9+ and the local LLM runner [Ollama](https://ollama.com/) installed on your machine.
 
 ### 2\. Download the Models
 
-Open your terminal and pull the necessary LLM and Embedding models:
+Open your terminal and pull the required LLM and Embedding models:
 
 ```bash
 ollama pull llama3.2
@@ -65,7 +43,7 @@ ollama pull nomic-embed-text
 
 ### 3\. Install Python Dependencies
 
-Create a virtual environment and install the required packages:
+Create a virtual environment (recommended) and install the required packages:
 
 ```bash
 pip install langchain-ollama langchain-community langgraph faiss-cpu
@@ -73,50 +51,40 @@ pip install langchain-ollama langchain-community langgraph faiss-cpu
 
 ### 4\. Run the Agent
 
+Start the interactive live session:
+
 ```bash
 python main.py
 ```
 
 -----
 
-## 🎬 Demo Script
+## 🎬 Live Demo Script (Test Cases)
 
-To see the full capabilities of the agent, follow this exact dialogue in the terminal:
+Once the agent is running, try typing these exact prompts to test all of its guardrails and features:
 
-1.  **User:** `"How much is the Basic plan?"` *(Tests RAG retrieval)*
-2.  **User:** `"Does it have 4k resolution?"` *(Tests context/memory)*
-3.  **User:** `"Actually, I'm ready to sign up for Pro!"` *(Tests Intent Shift & Guardrails)*
-4.  **User:** `"My name is Bob."` *(Tests state locking—agent should ask for email)*
-5.  **User:** `"My email is bob@test.com"` *(Triggers the backend tool successfully\!)*
+| Feature Tested | User Input | Expected Agent Behavior |
+| :--- | :--- | :--- |
+| **Greeting** | `Hey there!` | Responds warmly and asks how it can help. |
+| **OOD Guardrail** | `Can you write me a python script for a snake game?` | Politely refuses, stating it is a customer service bot. |
+| **RAG Retrieval** | `How much is the Basic plan?` | Retrieves facts and states it is $29/month. |
+| **Memory / RAG** | `Does it have 4k resolution?` | Understands "it" means Basic plan, states 4K is only on Pro. |
+| **Intent Shift** | `Actually, I'm ready to sign up for Pro!` | Locks state to High-Intent; asks for Name and Email. |
+| **State Locking** | `My name is Alice.` | Acknowledges the name, but persists in asking for the email. |
+| **Tool Execution**| `My email is alice@test.com` | Triggers `[🚀 BACKEND ACTION TRIGGERED]` and finalizes the flow. |
+
+Type `quit`, `exit`, or `q` at any time to gracefully end the terminal session.
 
 -----
 
-## 📱 WhatsApp Webhook Integration (Concept)
+## 🚀 Next Steps / Future Enhancements
 
-To deploy this local agent to a live WhatsApp business account, the following architecture would be implemented:
+  * **Database Integration:** Swap the `mock_lead_capture` print statement with an API call to a CRM (like HubSpot or Salesforce) or a PostgreSQL database.
+  * **Live Knowledge Base:** Replace the hardcoded `kb_data` array with a document loader that ingests real company PDFs or web scrapes the company FAQ page.
+  * **Web UI / Chatbot API:** Wrap the LangGraph execution block in a FastAPI endpoint to connect it to a React frontend or a WhatsApp Twilio integration.
 
-1.  **Webhook Server:** A lightweight `FastAPI` application exposed to the internet via `ngrok`.
-2.  **Meta Graph API:** Configured to send `POST` requests to the webhook whenever a user messages the WhatsApp business number.
-3.  **Thread Management:** Map the user's WhatsApp phone number directly to LangGraph's `thread_id` to maintain unique memory for thousands of concurrent users.
+-----
 
-**Conceptual Integration Flow:**
+### 📝 License
 
-```python
-@app.post("/webhook")
-async def whatsapp_webhook(request: Request):
-    data = await request.json()
-    user_phone = data["entry"][0]["changes"][0]["value"]["messages"][0]["from"]
-    user_msg = data["entry"][0]["changes"][0]["value"]["messages"][0]["text"]["body"]
-    
-    # Use phone number as unique memory thread
-    config = {"configurable": {"thread_id": user_phone}}
-    
-    # Pass to LangGraph
-    result = app.invoke({"messages": [HumanMessage(content=user_msg)]}, config)
-    agent_reply = result["messages"][-1].content
-    
-    # Send agent_reply back via Twilio or Meta Graph API
-    send_whatsapp_message(user_phone, agent_reply)
-    
-    return {"status": "success"}
-```
+MIT License - Created for demonstration and educational purposes.
